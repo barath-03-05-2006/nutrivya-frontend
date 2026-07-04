@@ -1,0 +1,63 @@
+.layout { display: flex; min-height: 100vh; background: var(--bg); }
+
+/* Sidebar */
+.sidebar {
+  width: 240px; min-height: 100vh; background: var(--bg-white);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  transition: width 0.25s ease; position: sticky; top: 0; height: 100vh;
+  overflow: hidden; flex-shrink: 0; box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+  z-index: 100;
+}
+.sidebar.collapsed { width: 68px; }
+
+.sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 16px 16px; border-bottom: 1px solid var(--border); }
+.sidebar-logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 34px; height: 34px; background: var(--primary); border-radius: 9px; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+.logo-text { font-size: 17px; font-weight: 800; color: var(--primary); white-space: nowrap; }
+.collapse-btn { background: var(--bg-gray); border: 1px solid var(--border); border-radius: 6px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: all 0.2s; flex-shrink: 0; }
+.collapse-btn:hover { background: var(--border); }
+
+.sidebar-user { display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-bottom: 1px solid var(--border); background: var(--bg); }
+.user-avatar { width: 34px; height: 34px; background: var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; color: white; flex-shrink: 0; }
+.user-info { overflow: hidden; }
+.user-name { font-size: 13px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.user-role { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 1px; }
+
+.sidebar-nav { flex: 1; display: flex; flex-direction: column; gap: 2px; padding: 12px 10px; overflow-y: auto; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius-sm); color: var(--text-secondary); text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all 0.15s ease; white-space: nowrap; }
+.nav-item:hover { background: var(--bg); color: var(--primary); }
+.nav-item.active { background: var(--primary-light); color: var(--primary); font-weight: 600; }
+
+.logout-btn { display: flex; align-items: center; gap: 10px; padding: 11px 22px; margin: 10px; background: none; border: 1px solid #FCA5A5; border-radius: var(--radius-sm); color: #DC2626; font-size: 13.5px; font-weight: 500; cursor: pointer; transition: all 0.15s; white-space: nowrap; font-family: var(--font); }
+.logout-btn:hover { background: #FEE2E2; }
+
+.main-content { flex: 1; overflow-y: auto; background: var(--bg); min-width: 0; }
+.content-wrapper { max-width: 1320px; margin: 0 auto; padding: 28px; }
+
+/* Mobile overlay */
+.sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 99; }
+
+/* Mobile top bar */
+.mobile-topbar { display: none; align-items: center; justify-content: space-between; padding: 14px 20px; background: var(--bg-white); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 50; box-shadow: var(--shadow-sm); }
+.mobile-topbar-brand { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 800; color: var(--primary); }
+.hamburger { background: none; border: none; cursor: pointer; display: flex; align-items: center; color: var(--text-secondary); padding: 4px; }
+.sidebar .hamburger { display: none; }
+
+@media (max-width: 768px) {
+  .layout { flex-direction: column; }
+
+  .sidebar {
+    position: fixed; top: 0; left: 0; height: 100vh;
+    transform: translateX(-100%); transition: transform 0.28s ease, width 0s;
+    width: 260px !important; z-index: 200;
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .sidebar-overlay { display: block; }
+  .collapse-btn { display: none; }
+
+  .mobile-topbar { display: flex; }
+  .main-content { flex: 1; }
+  .content-wrapper { padding: 16px; }
+  .sidebar .hamburger { display: flex; }
+  .sidebar .collapse-btn { display: none; }
+}
