@@ -6,8 +6,9 @@ import { useAuth } from '../../context/AuthContext';
 import { generateMealPlanPDF } from '../../utils/generateMealPlanPDF';
 import { format } from 'date-fns';
 
-const MEAL_ICONS = { EARLY_MORNING: '🌄', BREAKFAST: '🌅', MID_MORNING: '🍎', LUNCH: '☀️', EVENING_SNACK: '🌤️', DINNER: '🌙' };
-const MEAL_LABELS = { EARLY_MORNING: 'Early Morning', BREAKFAST: 'Breakfast', MID_MORNING: 'Mid Morning', LUNCH: 'Lunch', EVENING_SNACK: 'Evening Snack', DINNER: 'Dinner' };
+const MEAL_ICONS = { EARLY_MORNING: '🌄', BREAKFAST: '🌅', MID_MORNING: '🍎', LUNCH: '☀️', EVENING_SNACK: '🌤️', DINNER: '🌙', BEDTIME: '🛏️' };
+const MEAL_LABELS = { EARLY_MORNING: 'Early Morning', BREAKFAST: 'Breakfast', MID_MORNING: 'Mid Morning', LUNCH: 'Lunch', EVENING_SNACK: 'Evening Snack', DINNER: 'Dinner', BEDTIME: 'Bedtime' };
+const MEAL_TIMES = { EARLY_MORNING: '6:00 AM', BREAKFAST: '8:00 AM', MID_MORNING: '11:00 AM', LUNCH: '1:00 PM', EVENING_SNACK: '5:00 PM', DINNER: '8:00 PM', BEDTIME: '10:00 PM' };
 
 export default function TodaysMeals() {
   const { addToast } = useToast();
@@ -143,6 +144,7 @@ export default function TodaysMeals() {
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
                         <span style={{ fontWeight: 700, fontSize: 15 }}>{MEAL_LABELS[meal.mealType] || meal.mealType}</span>
+                        <span style={{ fontSize: 12, color: '#94A3B8', fontWeight: 500 }}>({MEAL_TIMES[meal.mealType]})</span>
                         {meal.completed && <span className="badge badge-green">✓ Done</span>}
                       </div>
                       <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 2 }}>{meal.mealName}</div>

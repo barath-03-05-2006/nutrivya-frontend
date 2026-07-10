@@ -30,6 +30,10 @@ export default function ClientDetail() {
   const [mealPlans, setMealPlans] = useState([]);
   const [expandedPlan, setExpandedPlan] = useState(null);
   const [newNote, setNewNote] = useState('');
+  const [editingNoteId, setEditingNoteId] = useState(null);
+  const [editNoteText, setEditNoteText] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const [confirmDeleteNote, setConfirmDeleteNote] = useState(null);
   const [tab, setTab] = useState('Overview');
   const [loading, setLoading] = useState(true);
   const [targets, setTargets] = useState({ targetCalories: '', targetProtein: '', targetCarbs: '', targetFat: '', targetFiber: '', targetWater: '' });
@@ -81,6 +85,32 @@ export default function ClientDetail() {
       const res = await analyticsAPI.getNotes(clientId);
       setNotes(res.data || []);
     } catch { addToast('Failed to add note', 'error'); }
+  };
+
+  const startEditNote = (n) => { setEditingNoteId(n.id); setEditNoteText(n.note); };
+  const cancelEditNote = () => { setEditingNoteId(null); setEditNoteText(''); };
+
+  const saveEditNote = async (noteId) => {
+    if (!editNoteText.trim()) { addToast('Note cannot be empty', 'error'); return; }
+    setSavingNote(true);
+    try {
+      await analyticsAPI.updateNote(noteId, editNoteText.trim());
+      addToast('Note updated!', 'success');
+      setEditingNoteId(null); setEditNoteText('');
+      const res = await analyticsAPI.getNotes(clientId);
+      setNotes(res.data || []);
+    } catch { addToast('Failed to update note', 'error'); }
+    finally { setSavingNote(false); }
+  };
+
+  const deleteNote = async (noteId) => {
+    try {
+      await analyticsAPI.deleteNote(noteId);
+      addToast('Note deleted', 'success');
+      setConfirmDeleteNote(null);
+      const res = await analyticsAPI.getNotes(clientId);
+      setNotes(res.data || []);
+    } catch { addToast('Failed to delete note', 'error'); }
   };
 
   const saveTargets = async () => {
@@ -163,7 +193,7 @@ export default function ClientDetail() {
   })) || [];
   const weightChartData = weightHistory.map(w => ({ date: w.logDate ? format(new Date(w.logDate), 'MMM d') : '', weight: w.weight }));
   const boolLabel = (v) => v === true ? 'Yes' : v === false ? 'No' : '—';
-  const mealTypeLabel = { EARLY_MORNING: '🌄 Early Morning', BREAKFAST: '🌅 Breakfast', MID_MORNING: '🍎 Mid Morning', LUNCH: '☀️ Lunch', EVENING_SNACK: '🌤️ Evening Snack', DINNER: '🌙 Dinner' };
+  const mealTypeLabel = { EARLY_MORNING: '🌄 Early Morning (6:00 AM)', BREAKFAST: '🌅 Breakfast (8:00 AM)', MID_MORNING: '🍎 Mid Morning (11:00 AM)', LUNCH: '☀️ Lunch (1:00 PM)', EVENING_SNACK: '🌤️ Evening Snack (5:00 PM)', DINNER: '🌙 Dinner (8:00 PM)', BEDTIME: '🛏️ Bedtime (10:00 PM)' };
   const hasChartData = weekDays.some(d => d.calories > 0);
 
   return (
@@ -485,10 +515,54 @@ export default function ClientDetail() {
             <h3 className="section-title">Progress Notes</h3>
             {notes.length === 0 ? <div className="empty-state"><div className="empty-state-title">No notes yet</div></div> : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {notes.map((n, i) => (
-                  <div key={i} style={{ padding: '14px 16px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', borderLeft: '3px solid #2563EB' }}>
-                    <div style={{ fontSize: 14, color: '#0F172A', marginBottom: 6 }}>{n.note}</div>
-                    <div style={{ fontSize: 12, color: '#94A3B8' }}>{n.createdAt ? format(new Date(n.createdAt), 'MMM d, yyyy h:mm a') : ''}</div>
+                {notes.map((n) => (
+                  <div key={n.id} style={{ padding: '14px 16px', background: '#F8FAFC', borderRadius: 10, border: '1px solid #E2E8F0', borderLeft: '3px solid #2563EB' }}>
+                    {editingNoteId === n.id ? (
+                      <div>
+                        <input
+                          type="text" className="form-input" style={{ marginBottom: 8 }}
+                          value={editNoteText} onChange={e => setEditNoteText(e.target.value)}
+                          maxLength={1000} autoFocus
+                        />
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button className="btn btn-primary btn-sm" disabled={savingNote} onClick={() => saveEditNote(n.id)}>
+                            <Check size={13} /> Save
+                          </button>
+                          <button className="btn btn-ghost btn-sm" onClick={cancelEditNote}>
+                            <X size={13} /> Cancel
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 10 }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: 14, color: '#0F172A', marginBottom: 6, wordBreak: 'break-word' }}>{n.note}</div>
+                          <div style={{ fontSize: 12, color: '#94A3B8' }}>
+                            {n.createdAt ? format(new Date(n.createdAt), 'MMM d, yyyy h:mm a') : ''}
+                            {n.updatedAt && <span> · edited</span>}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+                          <button onClick={() => startEditNote(n)} title="Edit note"
+                            style={{ background: '#EFF6FF', border: 'none', borderRadius: 7, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#2563EB' }}>
+                            <Pencil size={13} />
+                          </button>
+                          <button onClick={() => setConfirmDeleteNote(n.id)} title="Delete note"
+                            style={{ background: '#FEE2E2', border: 'none', borderRadius: 7, width: 30, height: 30, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#DC2626' }}>
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {confirmDeleteNote === n.id && (
+                      <div style={{ marginTop: 10, padding: 10, background: '#FEF2F2', borderRadius: 8, border: '1px solid #FECACA' }}>
+                        <div style={{ fontSize: 13, color: '#991B1B', marginBottom: 8 }}>Delete this note? This can't be undone.</div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                          <button className="btn btn-sm" style={{ background: '#DC2626', color: 'white', border: 'none' }} onClick={() => deleteNote(n.id)}>Delete</button>
+                          <button className="btn btn-ghost btn-sm" onClick={() => setConfirmDeleteNote(null)}>Cancel</button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

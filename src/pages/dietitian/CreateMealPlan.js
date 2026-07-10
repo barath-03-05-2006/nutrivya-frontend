@@ -6,12 +6,13 @@ import { useToast } from '../../context/ToastContext';
 import { Plus, Trash2, Search, ChevronRight, ChevronLeft, CheckCircle2, Copy } from 'lucide-react';
 
 const MEAL_TYPES = [
-  { key: 'EARLY_MORNING', label: 'Early Morning', icon: '🌄' },
-  { key: 'BREAKFAST',     label: 'Breakfast',     icon: '🌅' },
-  { key: 'MID_MORNING',   label: 'Mid Morning',   icon: '🍎' },
-  { key: 'LUNCH',         label: 'Lunch',         icon: '☀️' },
-  { key: 'EVENING_SNACK', label: 'Evening Snack', icon: '🌤️' },
-  { key: 'DINNER',        label: 'Dinner',        icon: '🌙' },
+  { key: 'EARLY_MORNING', label: 'Early Morning', time: '6:00 AM',  icon: '🌄' },
+  { key: 'BREAKFAST',     label: 'Breakfast',      time: '8:00 AM',  icon: '🌅' },
+  { key: 'MID_MORNING',   label: 'Mid Morning',    time: '11:00 AM', icon: '🍎' },
+  { key: 'LUNCH',         label: 'Lunch',          time: '1:00 PM',  icon: '☀️' },
+  { key: 'EVENING_SNACK', label: 'Evening Snack',  time: '5:00 PM',  icon: '🌤️' },
+  { key: 'DINNER',        label: 'Dinner',         time: '8:00 PM',  icon: '🌙' },
+  { key: 'BEDTIME',       label: 'Bedtime',        time: '10:00 PM', icon: '🛏️' },
 ];
 
 const EMPTY_MEAL  = (type) => ({ mealType: type.key, mealName: type.label, foodItems: [] });
@@ -367,7 +368,10 @@ export default function CreateMealPlan() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
                       <span style={{ fontSize: 22 }}>{mealType.icon}</span>
                       <div>
-                        <div style={{ fontWeight: 700, fontSize: 15 }}>{mealType.label}</div>
+                        <div style={{ fontWeight: 700, fontSize: 15 }}>
+                          {mealType.label}
+                          <span style={{ fontWeight: 500, fontSize: 12, color: 'var(--text-muted)', marginLeft: 6 }}>({mealType.time})</span>
+                        </div>
                         {mealCal > 0 && <div style={{ fontSize: 12, color: '#2563EB', fontFamily: 'var(--font-mono)', marginTop: 1 }}>{mealCal} kcal</div>}
                       </div>
                     </div>
@@ -463,6 +467,10 @@ export default function CreateMealPlan() {
                                 <label className="form-label">Fat</label>
                                 <input className="form-input" type="number" step="0.1" value={fi.fat} onChange={e => updateFoodItem(mealIdx, fiIdx, 'fat', parseFloat(e.target.value) || 0)} />
                               </div>
+                              <div style={{ flex: 1, minWidth: 70 }}>
+                                <label className="form-label">Fiber</label>
+                                <input className="form-input" type="number" step="0.1" value={fi.fiber} onChange={e => updateFoodItem(mealIdx, fiIdx, 'fiber', parseFloat(e.target.value) || 0)} />
+                              </div>
                               <div style={{ display: 'flex', alignItems: 'flex-end', paddingBottom: 2 }}>
                                 <button onClick={() => removeFoodItem(mealIdx, fiIdx)} style={{ background: '#FEE2E2', border: 'none', borderRadius: 7, width: 34, height: 38, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#DC2626' }}>
                                   <Trash2 size={14} />
@@ -522,6 +530,7 @@ export default function CreateMealPlan() {
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
                 <span style={{ fontSize: 20 }}>{MEAL_TYPES.find(t => t.key === meal.mealType)?.icon}</span>
                 <span style={{ fontWeight: 700 }}>{meal.mealName}</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>({MEAL_TYPES.find(t => t.key === meal.mealType)?.time})</span>
                 <span style={{ fontSize: 12, color: '#2563EB', fontFamily: 'var(--font-mono)', marginLeft: 'auto' }}>
                   {Math.round(meal.foodItems.reduce((a, fi) => a + (fi.calories || 0), 0))} kcal
                 </span>
@@ -531,7 +540,7 @@ export default function CreateMealPlan() {
                   <div key={j} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, padding: '6px 0', borderBottom: '1px solid var(--bg-gray)', flexWrap: 'wrap', gap: 4 }}>
                     <span style={{ fontWeight: 500 }}>{fi.foodName || '—'} <span style={{ color: '#94A3B8' }}>({fi.quantity}{fi.quantityUnit})</span></span>
                     <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--text-muted)', fontSize: 12 }}>
-                      {Math.round(fi.calories)}kcal · P:{fi.protein}g · C:{fi.carbohydrates}g · F:{fi.fat}g
+                      {Math.round(fi.calories)}kcal · P:{fi.protein}g · C:{fi.carbohydrates}g · F:{fi.fat}g · Fib:{fi.fiber || 0}g
                     </span>
                   </div>
                 ))}

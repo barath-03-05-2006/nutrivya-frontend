@@ -7,9 +7,10 @@ import { Download, Calendar, ChevronDown, ChevronUp, Salad } from 'lucide-react'
 import { format } from 'date-fns';
 
 const MEAL_LABELS = {
-  EARLY_MORNING: '🌄 Early Morning', BREAKFAST: '🌅 Breakfast',
-  MID_MORNING: '🍎 Mid Morning',    LUNCH: '☀️ Lunch',
-  EVENING_SNACK: '🌤️ Evening Snack', DINNER: '🌙 Dinner',
+  EARLY_MORNING: '🌄 Early Morning (6:00 AM)', BREAKFAST: '🌅 Breakfast (8:00 AM)',
+  MID_MORNING: '🍎 Mid Morning (11:00 AM)',    LUNCH: '☀️ Lunch (1:00 PM)',
+  EVENING_SNACK: '🌤️ Evening Snack (5:00 PM)', DINNER: '🌙 Dinner (8:00 PM)',
+  BEDTIME: '🛏️ Bedtime (10:00 PM)',
 };
 
 export default function MyPlans() {

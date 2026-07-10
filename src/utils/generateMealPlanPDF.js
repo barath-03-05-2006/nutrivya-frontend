@@ -2,7 +2,12 @@ import { jsPDF } from 'jspdf';
 
 const MEAL_LABELS = {
   EARLY_MORNING: 'Early Morning', BREAKFAST: 'Breakfast', MID_MORNING: 'Mid Morning',
-  LUNCH: 'Lunch', EVENING_SNACK: 'Evening Snack', DINNER: 'Dinner',
+  LUNCH: 'Lunch', EVENING_SNACK: 'Evening Snack', DINNER: 'Dinner', BEDTIME: 'Bedtime',
+};
+
+const MEAL_TIMES = {
+  EARLY_MORNING: '6:00 AM', BREAKFAST: '8:00 AM', MID_MORNING: '11:00 AM',
+  LUNCH: '1:00 PM', EVENING_SNACK: '5:00 PM', DINNER: '8:00 PM', BEDTIME: '10:00 PM',
 };
 
 const BLUE   = [37, 99, 235];
@@ -18,7 +23,7 @@ const TMUTED = [148, 163, 184];
 const WHITE  = [255, 255, 255];
 
 function getMealColor(mealType) {
-  return { EARLY_MORNING:[251,146,60], BREAKFAST:[37,99,235], MID_MORNING:[34,197,94], LUNCH:[245,158,11], EVENING_SNACK:[139,92,246], DINNER:[99,102,241] }[mealType] || BLUE;
+  return { EARLY_MORNING:[251,146,60], BREAKFAST:[37,99,235], MID_MORNING:[34,197,94], LUNCH:[245,158,11], EVENING_SNACK:[139,92,246], DINNER:[99,102,241], BEDTIME:[71,85,105] }[mealType] || BLUE;
 }
 
 export function generateMealPlanPDF(plan, clientName = 'Client', dietitianName = 'Your Dietitian') {
@@ -102,7 +107,7 @@ export function generateMealPlanPDF(plan, clientName = 'Client', dietitianName =
 
   // ── MEALS ────────────────────────────────────────────────────────
   (plan.meals || []).forEach(meal => {
-    const mLabel  = MEAL_LABELS[meal.mealType] || meal.mealName || meal.mealType;
+    const mLabel  = (MEAL_LABELS[meal.mealType] || meal.mealName || meal.mealType) + (MEAL_TIMES[meal.mealType] ? ` (${MEAL_TIMES[meal.mealType]})` : '');
     const mColor  = getMealColor(meal.mealType);
     const items   = meal.foodItems || [];
     const cardH   = 12 + items.length * 7 + 8;

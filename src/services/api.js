@@ -73,6 +73,8 @@ export const analyticsAPI = {
   getWeightHistory: (clientId) => API.get(`/analytics/weight-history/${clientId}`),
   getMyWeightHistory: () => API.get('/analytics/my/weight-history'),
   addNote: (clientId, note) => API.post(`/analytics/progress-note/${clientId}`, { note }),
+  updateNote: (noteId, note) => API.put(`/analytics/progress-note/${noteId}`, { note }),
+  deleteNote: (noteId) => API.delete(`/analytics/progress-note/${noteId}`),
   getNotes: (clientId) => API.get(`/analytics/progress-notes/${clientId}`),
   getMyNotes: () => API.get('/analytics/my-progress-notes'),
 };
