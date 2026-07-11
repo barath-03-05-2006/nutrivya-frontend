@@ -81,7 +81,7 @@ export default function Login() {
     <div className="login-page">
       <div className="login-left">
         <div className="login-brand">
-          <div className="login-logo"><img src="/logo.png" alt="Nutrivya" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /></div>
+          <div className="login-logo"><img src="/logo.png" alt="Nutrivya" style={{ width: 40, height: 40, objectFit: 'contain' }} /></div>
           <span className="login-brand-name">Nutrivya</span>
         </div>
         <h1 className="login-tagline">Your personalized<br />nutrition journey<br />starts here.</h1>

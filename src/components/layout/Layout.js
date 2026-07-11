@@ -52,7 +52,7 @@ export default function Layout({ children }) {
       {/* Mobile top bar */}
       <div className="mobile-topbar">
         <div className="mobile-topbar-brand">
-          <img src="/logo.png" alt="Nutrivya" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <img src="/logo.png" alt="Nutrivya" style={{ width: 28, height: 28, objectFit: 'contain', borderRadius: 7 }} />
           Nutrivya
         </div>
         <button className="hamburger" onClick={() => setMobileOpen(true)} aria-label="Open menu">
@@ -66,7 +66,7 @@ export default function Layout({ children }) {
       <aside className={`sidebar ${collapsed ? 'collapsed' : ''} ${mobileOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="sidebar-logo">
-            <img src="/logo.png" alt="Nutrivya" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img src="/logo.png" alt="Nutrivya" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 7 }} />
             {!collapsed && <span className="logo-text">Nutrivya</span>}
           </div>
           <button className="collapse-btn" onClick={() => setCollapsed(!collapsed)} aria-label="Toggle sidebar">
