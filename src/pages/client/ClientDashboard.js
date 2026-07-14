@@ -52,12 +52,16 @@ export default function ClientDashboard() {
 
   const addWater = async () => {
     if (!water) return;
+    const amount = parseFloat(water);
     setWaterLoading(true);
     try {
-      await analyticsAPI.logWater({ waterAmount: parseFloat(water), date: format(currentDate, 'yyyy-MM-dd') });
+      await analyticsAPI.logWater({ waterAmount: amount, date: format(currentDate, 'yyyy-MM-dd') });
       setWater('');
       addToast('Water intake logged!', 'success');
-      load(currentDate);
+      // Optimistic update so the UI reflects the new total instantly,
+      // even if the backend/DB has a brief read-after-write delay.
+      setDaily(prev => prev ? { ...prev, waterIntake: (prev.waterIntake || 0) + amount } : prev);
+      load(currentDate); // still reconcile with the server in the background
     } catch {
       addToast('Failed to log water', 'error');
     } finally {
