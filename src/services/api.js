@@ -57,8 +57,8 @@ export const mealAPI = {
   getMyPlans: () => API.get('/meal-plans/my-plans'),
   getByDate: (clientId, date) => API.get(`/meal-plans/client/${clientId}/date/${date}`),
   completeMeal: (mealId) => API.post(`/meal-plans/meal/${mealId}/complete`),
-  reportDeviation: (mealId, note) => API.post(`/meal-plans/meal/${mealId}/deviation`, { note }),
-  updateActualNutrition: (mealId, data) => API.put(`/meal-plans/meal/${mealId}/actual-nutrition`, data),
+reportFoodItemDeviation: (foodItemId, note) => API.post(`/meal-plans/food-item/${foodItemId}/deviation`, { note }),
+updateFoodItemActualNutrition: (foodItemId, data) => API.put(`/meal-plans/food-item/${foodItemId}/actual-nutrition`, data),
 };
 
 export const analyticsAPI = {
