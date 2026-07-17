@@ -18,6 +18,7 @@ export default function TodaysMeals() {
   const [expanded, setExpanded] = useState({});
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState({});
+  // Keyed by foodItemId (not mealId) — each food item has its own independent deviation note.
   const [deviationOpen, setDeviationOpen] = useState({});
   const [deviationText, setDeviationText] = useState({});
   const [submittingDeviation, setSubmittingDeviation] = useState({});
@@ -60,18 +61,18 @@ export default function TodaysMeals() {
     } finally { setCompleting(p => ({ ...p, [mealId]: false })); }
   };
 
-  const submitDeviation = async (mealId) => {
-    const note = (deviationText[mealId] || '').trim();
+  const submitDeviation = async (foodItemId) => {
+    const note = (deviationText[foodItemId] || '').trim();
     if (!note) { addToast('Write what you actually ate first', 'error'); return; }
-    setSubmittingDeviation(p => ({ ...p, [mealId]: true }));
+    setSubmittingDeviation(p => ({ ...p, [foodItemId]: true }));
     try {
-      await mealAPI.reportDeviation(mealId, note);
+      await mealAPI.reportFoodItemDeviation(foodItemId, note);
       addToast('Sent to your dietitian for review', 'success');
-      setDeviationOpen(p => ({ ...p, [mealId]: false }));
+      setDeviationOpen(p => ({ ...p, [foodItemId]: false }));
       await load();
     } catch (e) {
       addToast(e.response?.data?.error || 'Failed to send update', 'error');
-    } finally { setSubmittingDeviation(p => ({ ...p, [mealId]: false })); }
+    } finally { setSubmittingDeviation(p => ({ ...p, [foodItemId]: false })); }
   };
 
   if (loading) return <div className="loading-spinner" />;
@@ -157,6 +158,7 @@ export default function TodaysMeals() {
                         { v: `${((meal.actualProtein ?? meal.totalProtein) || 0).toFixed(0)}g`, u: 'P', c: '#22C55E' },
                         { v: `${((meal.actualCarbs ?? meal.totalCarbs) || 0).toFixed(0)}g`, u: 'C', c: '#F59E0B' },
                         { v: `${((meal.actualFat ?? meal.totalFat) || 0).toFixed(0)}g`, u: 'F', c: '#EF4444' },
+                        { v: `${((meal.actualFiber ?? meal.totalFiber) || 0).toFixed(0)}g`, u: 'Fib', c: '#8B5CF6' },
                       ].map((n, i) => (
                         <span key={i} style={{ fontSize: 12, fontFamily: 'JetBrains Mono, monospace' }}>
                           <span style={{ fontWeight: 700, color: n.c }}>{n.v}</span>
@@ -174,85 +176,89 @@ export default function TodaysMeals() {
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Food Items</div>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {meal.foodItems?.map(fi => (
-                          <div key={fi.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#F8FAFC', borderRadius: 8, border: '1px solid #E2E8F0', flexWrap: 'wrap', gap: 8 }}>
-                            <div>
-                              <div style={{ fontWeight: 600, fontSize: 14 }}>{fi.foodName}</div>
-                              <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>{fi.quantity} {fi.quantityUnit}</div>
+                          <div key={fi.id} style={{ padding: '10px 14px', background: fi.hasDeviation ? '#FFFBEB' : '#F8FAFC', borderRadius: 8, border: `1px solid ${fi.hasDeviation ? '#FDE68A' : '#E2E8F0'}` }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+                              <div>
+                                <div style={{ fontWeight: 600, fontSize: 14 }}>{fi.foodName}</div>
+                                <div style={{ fontSize: 12, color: '#94A3B8', marginTop: 1 }}>{fi.quantity} {fi.quantityUnit}</div>
+                              </div>
+                              <div style={{ display: 'flex', gap: 14 }}>
+                                {[
+                                  { v: `${fi.calories || 0}`, u: 'kcal', c: '#2563EB' },
+                                  { v: `${(fi.protein || 0).toFixed(1)}g`, u: 'P', c: '#22C55E' },
+                                  { v: `${(fi.carbohydrates || 0).toFixed(1)}g`, u: 'C', c: '#F59E0B' },
+                                  { v: `${(fi.fat || 0).toFixed(1)}g`, u: 'F', c: '#EF4444' },
+                                  { v: `${(fi.fiber || 0).toFixed(1)}g`, u: 'Fib', c: '#8B5CF6' },
+                                ].map((n, i) => (
+                                  <div key={i} style={{ textAlign: 'center' }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: n.c, fontFamily: 'JetBrains Mono, monospace' }}>{n.v}</div>
+                                    <div style={{ fontSize: 10, color: '#94A3B8' }}>{n.u}</div>
+                                  </div>
+                                ))}
+                              </div>
                             </div>
-                            <div style={{ display: 'flex', gap: 14 }}>
-                              {[
-                                { v: `${fi.calories || 0}`, u: 'kcal', c: '#2563EB' },
-                                { v: `${(fi.protein || 0).toFixed(1)}g`, u: 'P', c: '#22C55E' },
-                                { v: `${(fi.carbohydrates || 0).toFixed(1)}g`, u: 'C', c: '#F59E0B' },
-                                { v: `${(fi.fat || 0).toFixed(1)}g`, u: 'F', c: '#EF4444' },
-                              ].map((n, i) => (
-                                <div key={i} style={{ textAlign: 'center' }}>
-                                  <div style={{ fontSize: 12, fontWeight: 700, color: n.c, fontFamily: 'JetBrains Mono, monospace' }}>{n.v}</div>
-                                  <div style={{ fontSize: 10, color: '#94A3B8' }}>{n.u}</div>
+
+                            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid ${fi.hasDeviation ? '#FDE68A' : '#E2E8F0'}` }}>
+                              {fi.hasDeviation ? (
+                                <div>
+                                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                                    <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em' }}>What you actually ate</div>
+                                    {fi.deviationReviewed ? (
+                                      <span className="badge badge-green">✓ Reviewed by dietitian</span>
+                                    ) : (
+                                      <span className="badge" style={{ background: '#FEF3C7', color: '#92400E' }}>Pending review</span>
+                                    )}
+                                  </div>
+                                  <div style={{ fontSize: 13, color: '#475569', marginBottom: deviationOpen[fi.id] ? 10 : 0 }}>{fi.clientNote}</div>
+                                  {fi.deviationReviewed && (
+                                    <div style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, marginTop: 6 }}>
+                                      Nutrition updated: {fi.actualCalories ?? 0} kcal · P {(fi.actualProtein || 0).toFixed(1)}g · C {(fi.actualCarbs || 0).toFixed(1)}g · F {(fi.actualFat || 0).toFixed(1)}g · Fib {(fi.actualFiber || 0).toFixed(1)}g
+                                    </div>
+                                  )}
+                                  {!deviationOpen[fi.id] ? (
+                                    <button className="btn btn-sm" style={{ marginTop: 10, background: 'white', border: '1px solid #E2E8F0' }}
+                                      onClick={() => { setDeviationOpen(p => ({ ...p, [fi.id]: true })); setDeviationText(p => ({ ...p, [fi.id]: fi.clientNote || '' })); }}>
+                                      Update what you ate
+                                    </button>
+                                  ) : (
+                                    <div style={{ marginTop: 4 }}>
+                                      <textarea className="form-input" rows={2} style={{ width: '100%', resize: 'vertical', fontSize: 13 }}
+                                        value={deviationText[fi.id] || ''} onChange={e => setDeviationText(p => ({ ...p, [fi.id]: e.target.value }))}
+                                        placeholder={`E.g. Had 2 idlis instead of the ${fi.foodName}`} />
+                                      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                        <button className="btn btn-accent btn-sm" disabled={submittingDeviation[fi.id]} onClick={() => submitDeviation(fi.id)}>
+                                          {submittingDeviation[fi.id] ? 'Sending...' : 'Send to dietitian'}
+                                        </button>
+                                        <button className="btn btn-sm" style={{ background: 'white', border: '1px solid #E2E8F0' }} onClick={() => setDeviationOpen(p => ({ ...p, [fi.id]: false }))}>Cancel</button>
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                              ))}
+                              ) : !deviationOpen[fi.id] ? (
+                                <button className="btn btn-sm" style={{ background: 'white', border: '1px solid #E2E8F0' }}
+                                  onClick={() => setDeviationOpen(p => ({ ...p, [fi.id]: true }))}>
+                                  Ate something different from the plan?
+                                </button>
+                              ) : (
+                                <div>
+                                  <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 8 }}>Tell your dietitian what you actually had instead of {fi.foodName}</div>
+                                  <textarea className="form-input" rows={2} style={{ width: '100%', resize: 'vertical', fontSize: 13 }}
+                                    value={deviationText[fi.id] || ''} onChange={e => setDeviationText(p => ({ ...p, [fi.id]: e.target.value }))}
+                                    placeholder={`E.g. Had 2 idlis instead of the ${fi.foodName}`} />
+                                  <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+                                    <button className="btn btn-accent btn-sm" disabled={submittingDeviation[fi.id]} onClick={() => submitDeviation(fi.id)}>
+                                      {submittingDeviation[fi.id] ? 'Sending...' : 'Send to dietitian'}
+                                    </button>
+                                    <button className="btn btn-sm" style={{ background: 'white', border: '1px solid #E2E8F0' }} onClick={() => setDeviationOpen(p => ({ ...p, [fi.id]: false }))}>Cancel</button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
                           </div>
                         ))}
                       </div>
                     </div>
 
-                    <div style={{ marginBottom: 16, padding: 14, background: meal.hasDeviation ? '#FFFBEB' : '#F8FAFC', border: `1px solid ${meal.hasDeviation ? '#FDE68A' : '#E2E8F0'}`, borderRadius: 10 }}>
-                      {meal.hasDeviation ? (
-                        <div>
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                            <div style={{ fontSize: 12, fontWeight: 700, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em' }}>What you actually ate</div>
-                            {meal.deviationReviewed ? (
-                              <span className="badge badge-green">✓ Reviewed by dietitian</span>
-                            ) : (
-                              <span className="badge" style={{ background: '#FEF3C7', color: '#92400E' }}>Pending review</span>
-                            )}
-                          </div>
-                          <div style={{ fontSize: 13, color: '#475569', marginBottom: deviationOpen[meal.id] ? 10 : 0 }}>{meal.clientNote}</div>
-                          {meal.deviationReviewed && (
-                            <div style={{ fontSize: 12, color: '#16A34A', fontWeight: 600, marginTop: 6 }}>
-                              Nutrition updated: {meal.actualCalories ?? 0} kcal · P {(meal.actualProtein || 0).toFixed(0)}g · C {(meal.actualCarbs || 0).toFixed(0)}g · F {(meal.actualFat || 0).toFixed(0)}g
-                            </div>
-                          )}
-                          {!deviationOpen[meal.id] ? (
-                            <button className="btn btn-sm" style={{ marginTop: 10, background: 'white', border: '1px solid #E2E8F0' }}
-                              onClick={() => { setDeviationOpen(p => ({ ...p, [meal.id]: true })); setDeviationText(p => ({ ...p, [meal.id]: meal.clientNote || '' })); }}>
-                              Update what you ate
-                            </button>
-                          ) : (
-                            <div style={{ marginTop: 4 }}>
-                              <textarea className="form-input" rows={2} style={{ width: '100%', resize: 'vertical', fontSize: 13 }}
-                                value={deviationText[meal.id] || ''} onChange={e => setDeviationText(p => ({ ...p, [meal.id]: e.target.value }))}
-                                placeholder="E.g. Had 2 idlis and chutney instead of the oats bowl" />
-                              <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                                <button className="btn btn-accent btn-sm" disabled={submittingDeviation[meal.id]} onClick={() => submitDeviation(meal.id)}>
-                                  {submittingDeviation[meal.id] ? 'Sending...' : 'Send to dietitian'}
-                                </button>
-                                <button className="btn btn-sm" style={{ background: 'white', border: '1px solid #E2E8F0' }} onClick={() => setDeviationOpen(p => ({ ...p, [meal.id]: false }))}>Cancel</button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      ) : !deviationOpen[meal.id] ? (
-                        <button className="btn btn-sm" style={{ background: 'white', border: '1px solid #E2E8F0' }}
-                          onClick={() => setDeviationOpen(p => ({ ...p, [meal.id]: true }))}>
-                          Ate something different from the plan?
-                        </button>
-                      ) : (
-                        <div>
-                          <div style={{ fontSize: 12, fontWeight: 700, color: '#475569', marginBottom: 8 }}>Tell your dietitian what you actually had</div>
-                          <textarea className="form-input" rows={2} style={{ width: '100%', resize: 'vertical', fontSize: 13 }}
-                            value={deviationText[meal.id] || ''} onChange={e => setDeviationText(p => ({ ...p, [meal.id]: e.target.value }))}
-                            placeholder="E.g. Had 2 idlis and chutney instead of the oats bowl" />
-                          <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-                            <button className="btn btn-accent btn-sm" disabled={submittingDeviation[meal.id]} onClick={() => submitDeviation(meal.id)}>
-                              {submittingDeviation[meal.id] ? 'Sending...' : 'Send to dietitian'}
-                            </button>
-                            <button className="btn btn-sm" style={{ background: 'white', border: '1px solid #E2E8F0' }} onClick={() => setDeviationOpen(p => ({ ...p, [meal.id]: false }))}>Cancel</button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
                     {!meal.completed ? (
                       <button className="btn btn-accent" style={{ width: '100%', justifyContent: 'center' }}
                         onClick={() => completeMeal(meal.id, meal.mealType)} disabled={completing[meal.id]}>
