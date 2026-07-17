@@ -43,7 +43,7 @@ export default function ClientDetail() {
   const [editName, setEditName] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(null);
   const [photos, setPhotos] = useState([]);
-  const [recalcMeal, setRecalcMeal] = useState(null);
+  const [recalcItem, setRecalcItem] = useState(null);
   const [recalcForm, setRecalcForm] = useState({ calories: '', protein: '', carbs: '', fat: '', fiber: '' });
   const [savingRecalc, setSavingRecalc] = useState(false);
 
@@ -146,18 +146,18 @@ export default function ClientDetail() {
     } catch { addToast('Failed to update plan', 'error'); }
   };
 
-  const openRecalc = (meal) => {
-    setRecalcMeal(meal.id);
+  const openRecalc = (foodItem) => {
+    setRecalcItem(foodItem.id);
     setRecalcForm({
-      calories: meal.actualCalories ?? meal.totalCalories ?? '',
-      protein: meal.actualProtein ?? meal.totalProtein ?? '',
-      carbs: meal.actualCarbs ?? meal.totalCarbs ?? '',
-      fat: meal.actualFat ?? meal.totalFat ?? '',
-      fiber: meal.actualFiber ?? meal.totalFiber ?? '',
+      calories: foodItem.actualCalories ?? foodItem.calories ?? '',
+      protein: foodItem.actualProtein ?? foodItem.protein ?? '',
+      carbs: foodItem.actualCarbs ?? foodItem.carbohydrates ?? '',
+      fat: foodItem.actualFat ?? foodItem.fat ?? '',
+      fiber: foodItem.actualFiber ?? foodItem.fiber ?? '',
     });
   };
 
-  const saveRecalc = async (planId, mealId) => {
+  const saveRecalc = async (foodItemId) => {
     setSavingRecalc(true);
     try {
       const payload = {
@@ -167,16 +167,13 @@ export default function ClientDetail() {
         fat: parseFloat(recalcForm.fat) || 0,
         fiber: parseFloat(recalcForm.fiber) || 0,
       };
-      await mealAPI.updateActualNutrition(mealId, payload);
-      setMealPlans(prev => prev.map(p => p.id !== planId ? p : {
-        ...p,
-        meals: p.meals.map(m => m.id !== mealId ? m : {
-          ...m, completed: true, deviationReviewed: true,
-          actualCalories: payload.calories, actualProtein: payload.protein,
-          actualCarbs: payload.carbs, actualFat: payload.fat, actualFiber: payload.fiber,
-        }),
-      }));
-      setRecalcMeal(null);
+      await mealAPI.updateFoodItemActualNutrition(foodItemId, payload);
+      // Re-sync from the backend rather than hand-patching state: the plan-level totals shown in
+      // the header and the Protein/Carbs/Fat/Fiber summary cards are computed server-side from
+      // ALL meals, not just this one item, so a local patch would leave them stale.
+      const refreshed = await mealAPI.getClientPlans(clientId).catch(() => null);
+      if (refreshed) setMealPlans(refreshed.data || []);
+      setRecalcItem(null);
       addToast('Nutrition recalculated and logged', 'success');
     } catch (e) {
       addToast(e.response?.data?.error || 'Failed to update nutrition', 'error');
@@ -393,16 +390,24 @@ export default function ClientDetail() {
                                 <div style={{ padding: '8px 14px' }}>
                                   <div className="table-container">
                                     <table style={{ minWidth: 400 }}>
-                                      <thead><tr><th>Food</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Cal</th><th style={{ textAlign: 'right' }}>P</th><th style={{ textAlign: 'right' }}>C</th><th style={{ textAlign: 'right' }}>F</th></tr></thead>
+                                      <thead><tr><th>Food</th><th style={{ textAlign: 'right' }}>Qty</th><th style={{ textAlign: 'right' }}>Cal</th><th style={{ textAlign: 'right' }}>P</th><th style={{ textAlign: 'right' }}>C</th><th style={{ textAlign: 'right' }}>F</th><th style={{ textAlign: 'right' }}>Fib</th></tr></thead>
                                       <tbody>
                                         {meal.foodItems.map((fi, idx) => (
                                           <tr key={idx}>
-                                            <td style={{ fontWeight: 500 }}>{fi.foodName}</td>
+                                            <td style={{ fontWeight: 500 }}>
+                                              {fi.foodName}
+                                              {fi.hasDeviation && (
+                                                <span style={{ marginLeft: 6, fontSize: 10, padding: '1px 6px', borderRadius: 99, fontWeight: 600, background: fi.deviationReviewed ? '#DBEAFE' : '#FEF3C7', color: fi.deviationReviewed ? '#2563EB' : '#92400E' }}>
+                                                  {fi.deviationReviewed ? 'reviewed' : 'ate differently'}
+                                                </span>
+                                              )}
+                                            </td>
                                             <td style={{ textAlign: 'right', color: '#94A3B8' }}>{fi.quantity}{fi.quantityUnit}</td>
                                             <td style={{ textAlign: 'right', color: '#2563EB', fontWeight: 700 }}>{fi.calories}</td>
                                             <td style={{ textAlign: 'right', color: '#22C55E', fontWeight: 600 }}>{(fi.protein || 0).toFixed(1)}g</td>
                                             <td style={{ textAlign: 'right', color: '#F59E0B', fontWeight: 600 }}>{(fi.carbohydrates || 0).toFixed(1)}g</td>
                                             <td style={{ textAlign: 'right', color: '#EF4444', fontWeight: 600 }}>{(fi.fat || 0).toFixed(1)}g</td>
+                                            <td style={{ textAlign: 'right', color: '#8B5CF6', fontWeight: 600 }}>{(fi.fiber || 0).toFixed(1)}g</td>
                                           </tr>
                                         ))}
                                       </tbody>
@@ -410,12 +415,12 @@ export default function ClientDetail() {
                                   </div>
                                 </div>
                               )}
-                              {meal.hasDeviation && (
-                                <div style={{ margin: '0 14px 12px', padding: 12, background: meal.deviationReviewed ? '#F0F9FF' : '#FFFBEB', border: `1px solid ${meal.deviationReviewed ? '#BAE6FD' : '#FDE68A'}`, borderRadius: 8 }}>
-                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Client note</div>
-                                  <div style={{ fontSize: 13, color: '#334155', marginBottom: 10 }}>{meal.clientNote}</div>
+                              {meal.foodItems?.filter(fi => fi.hasDeviation).map(fi => (
+                                <div key={fi.id} style={{ margin: '0 14px 12px', padding: 12, background: fi.deviationReviewed ? '#F0F9FF' : '#FFFBEB', border: `1px solid ${fi.deviationReviewed ? '#BAE6FD' : '#FDE68A'}`, borderRadius: 8 }}>
+                                  <div style={{ fontSize: 11, fontWeight: 700, color: '#92400E', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: 4 }}>Client note — instead of {fi.foodName}</div>
+                                  <div style={{ fontSize: 13, color: '#334155', marginBottom: 10 }}>{fi.clientNote}</div>
 
-                                  {recalcMeal === meal.id ? (
+                                  {recalcItem === fi.id ? (
                                     <div>
                                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: 8, marginBottom: 10 }}>
                                         {[
@@ -430,26 +435,26 @@ export default function ClientDetail() {
                                         ))}
                                       </div>
                                       <div style={{ display: 'flex', gap: 8 }}>
-                                        <button className="btn btn-accent btn-sm" disabled={savingRecalc} onClick={() => saveRecalc(plan.id, meal.id)}>
+                                        <button className="btn btn-accent btn-sm" disabled={savingRecalc} onClick={() => saveRecalc(fi.id)}>
                                           {savingRecalc ? 'Saving...' : 'Save & update log'}
                                         </button>
-                                        <button className="btn btn-sm" style={{ background: 'white', border: '1px solid #E2E8F0' }} onClick={() => setRecalcMeal(null)}>Cancel</button>
+                                        <button className="btn btn-sm" style={{ background: 'white', border: '1px solid #E2E8F0' }} onClick={() => setRecalcItem(null)}>Cancel</button>
                                       </div>
                                     </div>
                                   ) : (
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
-                                      {meal.deviationReviewed ? (
+                                      {fi.deviationReviewed ? (
                                         <div style={{ fontSize: 12, color: '#0369A1', fontWeight: 600 }}>
-                                          Logged as {meal.actualCalories ?? 0} kcal · P {(meal.actualProtein || 0).toFixed(1)}g · C {(meal.actualCarbs || 0).toFixed(1)}g · F {(meal.actualFat || 0).toFixed(1)}g
+                                          Logged as {fi.actualCalories ?? 0} kcal · P {(fi.actualProtein || 0).toFixed(1)}g · C {(fi.actualCarbs || 0).toFixed(1)}g · F {(fi.actualFat || 0).toFixed(1)}g · Fib {(fi.actualFiber || 0).toFixed(1)}g
                                         </div>
                                       ) : <div />}
-                                      <button className="btn btn-sm" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#2563EB' }} onClick={() => openRecalc(meal)}>
-                                        <PenLine size={13} /> {meal.deviationReviewed ? 'Edit nutrition' : 'Recalculate nutrition'}
+                                      <button className="btn btn-sm" style={{ background: '#EFF6FF', border: '1px solid #BFDBFE', color: '#2563EB' }} onClick={() => openRecalc(fi)}>
+                                        <PenLine size={13} /> {fi.deviationReviewed ? 'Edit nutrition' : 'Recalculate nutrition'}
                                       </button>
                                     </div>
                                   )}
                                 </div>
-                              )}
+                              ))}
                             </div>
                           ))}
                         </div>
