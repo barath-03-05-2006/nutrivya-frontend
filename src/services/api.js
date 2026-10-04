@@ -45,8 +45,8 @@ export const clientAPI = {
   getMyClients: () => API.get('/clients/dietitian/my-clients'),
   getDietitians: () => API.get('/clients/dietitians'),
   setTargets: (clientId, targets) => API.post(`/clients/set-targets/${clientId}`, targets),
+  deleteClient: (clientId) => API.delete(`/clients/${clientId}`),   // ← NEW
 };
-
 // Single unified mealAPI — no more duplicate mealPlanAPI
 export const mealAPI = {
   create: (data) => API.post('/meal-plans', data),
