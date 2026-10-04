@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { analyticsAPI, clientAPI, mealAPI, photoAPI } from '../../services/api';
 import { useToast } from '../../context/ToastContext';
 import NutrientBar from '../../components/shared/NutrientBar';
 import PhotoProgress from '../../components/shared/PhotoProgress';
 import { WeightChart, CalorieChart, ProteinChart, ComplianceChart } from '../../components/charts/Charts';
 import { format, startOfWeek } from 'date-fns';
-import { MessageSquarePlus, Save, ChevronDown, ChevronUp, Utensils, Calendar, Trash2, Pencil, X, Check, BarChart2, Printer, PenLine } from 'lucide-react';
+import { MessageSquarePlus, Save, ChevronDown, ChevronUp, Utensils, Calendar, Trash2, Pencil, X, Check, BarChart2, Printer, PenLine, AlertTriangle } from 'lucide-react';
 
 const TABS = ['Overview', 'Nutrition', 'Charts', 'Diet Plans', 'Details', 'Notes', 'Photos'];
 
@@ -46,6 +46,22 @@ export default function ClientDetail() {
   const [recalcItem, setRecalcItem] = useState(null);
   const [recalcForm, setRecalcForm] = useState({ calories: '', protein: '', carbs: '', fat: '', fiber: '' });
   const [savingRecalc, setSavingRecalc] = useState(false);
+  const navigate = useNavigate();
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  const [deletingAccount, setDeletingAccount] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setDeletingAccount(true);
+    try {
+      await clientAPI.deleteClient(clientId);
+      addToast('Client account deleted', 'success');
+      navigate('/dietitian/clients');
+    } catch (e) {
+      addToast(e.response?.data?.error || 'Failed to delete account', 'error');
+      setDeletingAccount(false);
+    }
+  };
 
   const load = useCallback(async () => {
     try {
@@ -478,6 +494,23 @@ export default function ClientDetail() {
                 <span style={{ fontSize: 13, fontWeight: 700 }}>{r.value}</span>
               </div>
             ))}
+
+            {/* ── Danger Zone ── */}
+            <div style={{ marginTop: 28, padding: 16, background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#991B1B', fontWeight: 800, fontSize: 14, marginBottom: 6 }}>
+                <AlertTriangle size={16} /> Danger Zone
+              </div>
+              <p style={{ fontSize: 13, color: '#7F1D1D', margin: '0 0 12px', lineHeight: 1.5 }}>
+                Permanently delete this client's account and all their data: meal plans, logs, weight history, notes and photos. This can't be undone.
+              </p>
+              <button
+                className="btn btn-sm"
+                style={{ background: '#DC2626', color: 'white', border: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}
+                onClick={() => { setDeleteConfirmText(''); setShowDeleteAccount(true); }}
+              >
+                <Trash2 size={14} /> Delete Account
+              </button>
+            </div>
           </div>
           <div className="card">
             <h3 className="section-title">Health Questionnaire</h3>
@@ -572,6 +605,55 @@ export default function ClientDetail() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ── Delete account confirmation modal ── */}
+      {showDeleteAccount && (
+        <div
+          onClick={() => !deletingAccount && setShowDeleteAccount(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.55)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 16 }}
+        >
+          <div
+            onClick={e => e.stopPropagation()}
+            style={{ background: 'white', borderRadius: 14, padding: 24, width: '100%', maxWidth: 420, boxShadow: '0 20px 50px rgba(0,0,0,0.25)' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10 }}>
+              <div style={{ width: 36, height: 36, borderRadius: '50%', background: '#FEE2E2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#DC2626' }}>
+                <AlertTriangle size={18} />
+              </div>
+              <h3 style={{ margin: 0, fontSize: 17, fontWeight: 800 }}>Delete {overview.clientName}?</h3>
+            </div>
+            <p style={{ fontSize: 13, color: '#475569', lineHeight: 1.6, margin: '0 0 14px' }}>
+              This permanently removes the account and <b>all</b> of their data. The client will no longer be able to log in.
+              To confirm, type their name: <b>{overview.clientName}</b>
+            </p>
+            <input
+              value={deleteConfirmText}
+              onChange={e => setDeleteConfirmText(e.target.value)}
+              placeholder={overview.clientName}
+              autoFocus
+              disabled={deletingAccount}
+              style={{ width: '100%', padding: '10px 12px', border: '1px solid #CBD5E1', borderRadius: 8, fontSize: 14, boxSizing: 'border-box', marginBottom: 16, fontFamily: 'var(--font)' }}
+            />
+            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
+              <button className="btn btn-ghost btn-sm" onClick={() => setShowDeleteAccount(false)} disabled={deletingAccount}>
+                Cancel
+              </button>
+              <button
+                className="btn btn-sm"
+                onClick={handleDeleteAccount}
+                disabled={deletingAccount || deleteConfirmText.trim().toLowerCase() !== (overview.clientName || '').trim().toLowerCase()}
+                style={{
+                  background: '#DC2626', color: 'white', border: 'none',
+                  opacity: (deletingAccount || deleteConfirmText.trim().toLowerCase() !== (overview.clientName || '').trim().toLowerCase()) ? 0.5 : 1,
+                  cursor: deletingAccount ? 'not-allowed' : 'pointer'
+                }}
+              >
+                {deletingAccount ? 'Deleting...' : 'Delete permanently'}
+              </button>
+            </div>
           </div>
         </div>
       )}
